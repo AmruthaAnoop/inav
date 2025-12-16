@@ -321,17 +321,21 @@ pm2 restart payment-backend --max-memory-restart 500M
 
 | Service | URL |
 |---------|-----|
-| Backend API | `http://YOUR-EC2-IP/api` |
-| Health Check | `http://YOUR-EC2-IP/api/health` |
-| API Docs | `http://YOUR-EC2-IP/api/docs` |
-| Customers | `http://YOUR-EC2-IP/api/customers` |
+| Backend API | `http://3.109.121.160:5000/api` |
+| Health Check | `http://3.109.121.160:5000/api/health` |
+| API Docs (Swagger) | `http://3.109.121.160:5000/api-docs/` |
+| Customers | `http://3.109.121.160:5000/api/customers` |
+| Payments | `http://3.109.121.160:5000/api/payments` |
 
 ---
 
 ## 📋 Deliverables Checklist
 
 - [x] GitHub Repository: https://github.com/AmruthaAnoop/inav
-- [ ] EC2 Instance Running
-- [ ] Backend API Deployed: `http://YOUR-EC2-IP/api`
-- [ ] CI/CD Pipeline Active
-- [ ] Environment Variables Configured
+- [x] EC2 Instance Running: 3.109.121.160
+- [x] Backend API Deployed: `http://3.109.121.160:5000/api`
+- [x] CI/CD Pipeline Active (GitHub Actions)
+- [x] Environment Variables Configured
+- [x] Database Schema Created (customers, payments tables)
+- [x] Sample Data Loaded (3 customers)
+- [x] All API Endpoints Working
