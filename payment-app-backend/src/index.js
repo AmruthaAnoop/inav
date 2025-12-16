@@ -14,8 +14,18 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
-// Security Middleware
-app.use(helmet());
+// Security Middleware - configured to allow Swagger UI
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+}));
 
 // CORS Middleware
 app.use(cors({

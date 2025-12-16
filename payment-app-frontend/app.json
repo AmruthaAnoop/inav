@@ -37,7 +37,10 @@
       ]
     ],
     "extra": {
-      "API_URL": "http://localhost:5000/api"
+      "API_URL": "http://3.109.121.160:5000/api",
+      "eas": {
+        "projectId": "payment-collection-mobile"
+      }
     }
   }
 }
