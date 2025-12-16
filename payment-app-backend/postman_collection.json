@@ -1,0 +1,236 @@
+{
+  "info": {
+    "name": "Payment Collection API",
+    "description": "Complete API collection for Payment Collection Mobile App - Manage personal loan payments",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/../api/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["..", "api", "health"]
+            },
+            "description": "Check if the API is running and responsive"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Customers",
+      "item": [
+        {
+          "name": "Get All Customers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers?limit=50&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "description": "Number of customers to return (max 100)"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Number of customers to skip"
+                }
+              ]
+            },
+            "description": "Retrieve a list of all active customers with pagination"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customer by Account Number",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/ACC001",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "ACC001"]
+            },
+            "description": "Retrieve detailed customer information including payment statistics"
+          },
+          "response": []
+        },
+        {
+          "name": "Create New Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"account_number\": \"ACC004\",\n  \"customer_name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"phone\": \"9876543213\",\n  \"issue_date\": \"2023-12-16\",\n  \"interest_rate\": 8.5,\n  \"tenure\": 36,\n  \"emi_due\": 5000,\n  \"loan_amount\": 180000,\n  \"outstanding_balance\": 180000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers"]
+            },
+            "description": "Create a new customer account (Admin endpoint)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Process Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"account_number\": \"ACC001\",\n  \"payment_amount\": 5000.00,\n  \"payment_method\": \"UPI\",\n  \"transaction_id\": \"TXN123456789\",\n  \"remarks\": \"Monthly EMI payment\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments"]
+            },
+            "description": "Process a payment for a customer loan account"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Payments (Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments?page=1&limit=20&status=SUCCESS&payment_method=UPI",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Items per page (default: 20, max: 100)"
+                },
+                {
+                  "key": "status",
+                  "value": "SUCCESS",
+                  "description": "Filter by status: PENDING, SUCCESS, FAILED, REVERSED",
+                  "disabled": false
+                },
+                {
+                  "key": "payment_method",
+                  "value": "UPI",
+                  "description": "Filter by method: UPI, CARD, NET_BANKING, CHEQUE",
+                  "disabled": false
+                },
+                {
+                  "key": "start_date",
+                  "value": "2023-01-01",
+                  "description": "Filter from date (YYYY-MM-DD)",
+                  "disabled": true
+                },
+                {
+                  "key": "end_date",
+                  "value": "2023-12-31",
+                  "description": "Filter to date (YYYY-MM-DD)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Retrieve paginated list of all payments with optional filters"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Payment History by Account",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments/ACC001?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "ACC001"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Items per page"
+                }
+              ]
+            },
+            "description": "Retrieve paginated payment history for a specific customer account"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Detailed Payment History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments/history/ACC001",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "history", "ACC001"]
+            },
+            "description": "Retrieve comprehensive payment history with customer info and statistics"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Dashboard Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments/stats/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "stats", "dashboard"]
+            },
+            "description": "Retrieve aggregated statistics for dashboard display"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

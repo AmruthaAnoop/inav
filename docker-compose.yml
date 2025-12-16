@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: payment_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: payment_collection_db
+      MYSQL_USER: payment_user
+      MYSQL_PASSWORD: payment_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./payment-app-backend/src/db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    networks:
+      - payment_network
+
+  # Backend API
+  backend:
+    build:
+      context: ./payment-app-backend
+      dockerfile: Dockerfile
+    container_name: payment_backend
+    environment:
+      NODE_ENV: production
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: payment_user
+      DB_PASSWORD: payment_password
+      DB_NAME: payment_collection_db
+      JWT_SECRET: your_jwt_secret_key_here
+      CORS_ORIGIN: http://localhost:19000
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mysql
+    networks:
+      - payment_network
+
+  # Frontend Mobile App
+  frontend:
+    build:
+      context: ./payment-app-frontend
+      dockerfile: Dockerfile
+    container_name: payment_frontend
+    environment:
+      API_URL: http://localhost:5000/api
+    ports:
+      - "19000:19000"
+    depends_on:
+      - backend
+    networks:
+      - payment_network
+
+volumes:
+  mysql_data:
+
+networks:
+  payment_network:
+    driver: bridge
