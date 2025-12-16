@@ -14,22 +14,20 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
+// Swagger Documentation - placed before helmet to avoid CSP issues
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Payment Collection API Docs'
+}));
+
 // Security Middleware - configured to allow Swagger UI
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "https:"],
-    },
-  },
-  crossOriginEmbedderPolicy: false,
+  contentSecurityPolicy: false,
 }));
 
 // CORS Middleware
 app.use(cors({
-  origin: process.env.CORS_ORIGIN?.split(',') || 'http://localhost:19000',
+  origin: process.env.CORS_ORIGIN?.split(',') || '*',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -79,12 +77,6 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
-
-// Swagger Documentation
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'Payment Collection API Docs'
-}));
 
 // Redirect root to API docs
 app.get('/', (req, res) => {
