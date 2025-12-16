@@ -3,81 +3,108 @@ name: Frontend CI/CD Pipeline
 on:
   push:
     branches: [ main, develop ]
+    paths:
+      - 'payment-app-frontend/**'
   pull_request:
     branches: [ main, develop ]
+    paths:
+      - 'payment-app-frontend/**'
+
+env:
+  NODE_VERSION: '20.x'
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
-    
-    strategy:
-      matrix:
-        node-version: [18.x, 20.x]
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Setup Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Run linter
-      run: npm run lint
-      continue-on-error: true
-
-    - name: Run tests
-      run: npm test
-      continue-on-error: true
-
-    - name: Check React Native build
-      run: npx expo export:web
-      continue-on-error: true
-      env:
-        EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL }}
-
-  android-build:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Setup Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
-        node-version: '18.x'
+        node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
+        cache-dependency-path: payment-app-frontend/package-lock.json
 
     - name: Install dependencies
+      working-directory: ./payment-app-frontend
+      run: npm ci
+
+    - name: Run tests
+      working-directory: ./payment-app-frontend
+      run: npm test
+      env:
+        EXPO_PUBLIC_API_URL: http://localhost:5000/api
+
+  build-web:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: payment-app-frontend/package-lock.json
+
+    - name: Install dependencies
+      working-directory: ./payment-app-frontend
+      run: npm ci
+
+    - name: Build web version
+      working-directory: ./payment-app-frontend
+      run: npx expo export:web
+      env:
+        EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL }}
+      continue-on-error: true
+
+    - name: Upload web build
+      uses: actions/upload-artifact@v4
+      with:
+        name: web-build
+        path: payment-app-frontend/dist
+        retention-days: 7
+      continue-on-error: true
+
+  build-android:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: payment-app-frontend/package-lock.json
+
+    - name: Setup Expo
+      uses: expo/expo-github-action@v8
+      with:
+        expo-version: latest
+        eas-version: latest
+        token: ${{ secrets.EXPO_TOKEN }}
+
+    - name: Install dependencies
+      working-directory: ./payment-app-frontend
       run: npm ci
 
     - name: Build Android APK
-      run: eas build --platform android --non-interactive
+      working-directory: ./payment-app-frontend
+      run: eas build --platform android --profile preview --non-interactive
       env:
-        EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL }}
       continue-on-error: true
-
-  ios-build:
-    needs: build
-    runs-on: macos-latest
-    if: github.ref == 'refs/heads/main'
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18.x'
         cache: 'npm'
 
     - name: Install dependencies

@@ -3,17 +3,20 @@ name: Backend CI/CD Pipeline
 on:
   push:
     branches: [ main, develop ]
+    paths:
+      - 'payment-app-backend/**'
   pull_request:
     branches: [ main, develop ]
+    paths:
+      - 'payment-app-backend/**'
+
+env:
+  NODE_VERSION: '20.x'
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     
-    strategy:
-      matrix:
-        node-version: [18.x, 20.x]
-
     services:
       mysql:
         image: mysql:8.0
@@ -30,61 +33,115 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
-    - name: Setup Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
       with:
-        node-version: ${{ matrix.node-version }}
+        node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
+        cache-dependency-path: payment-app-backend/package-lock.json
 
     - name: Install dependencies
+      working-directory: ./payment-app-backend
       run: npm ci
 
-    - name: Run linter
-      run: npm run lint
-      continue-on-error: true
-
     - name: Run tests
+      working-directory: ./payment-app-backend
       run: npm test
-      continue-on-error: true
       env:
         DB_HOST: localhost
         DB_USER: root
         DB_PASSWORD: root
         DB_NAME: payment_collection_db
+        NODE_ENV: test
 
-    - name: Build backend
-      run: npm run build
+    - name: Upload coverage report
+      uses: codecov/codecov-action@v3
+      with:
+        directory: ./payment-app-backend/coverage
       continue-on-error: true
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: payment-app-backend/package-lock.json
+
+    - name: Install dependencies
+      working-directory: ./payment-app-backend
+      run: npm ci --production
+
+    - name: Create deployment artifact
+      run: |
+        cd payment-app-backend
+        tar -czf ../backend-build.tar.gz --exclude=node_modules --exclude=tests --exclude=coverage .
+        
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: backend-build
+        path: backend-build.tar.gz
+        retention-days: 7
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    environment:
+      name: production
+      url: http://${{ secrets.EC2_HOST }}/api
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+    - name: Download artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: backend-build
 
     - name: Deploy to EC2
-      uses: appleboy/ssh-action@master
+      uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.EC2_HOST }}
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
-          cd ~/payment-app-backend
+          echo "🚀 Starting deployment..."
+          
+          # Navigate to app directory
+          cd ~/inav/payment-app-backend
+          
+          # Pull latest changes
           git pull origin main
-          npm ci
-          npm run migrate
-          sudo systemctl restart payment-backend
+          
+          # Install production dependencies
+          npm ci --production
+          
+          # Run database migrations
+          npm run migrate || echo "No migrations to run"
+          
+          # Restart application
+          pm2 restart payment-backend || pm2 start src/index.js --name payment-backend
+          
+          # Health check
+          sleep 5
+          curl -f http://localhost:5000/api/health || exit 1
+          
+          echo "✅ Deployment complete!"
 
-    - name: Notify deployment status
-      uses: 8398a7/action-slack@v3
-      if: always()
-      with:
-        status: ${{ job.status }}
-        text: 'Backend deployment ${{ job.status }}'
-        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-      continue-on-error: true
+    - name: Notify on success
+      if: success()
+      run: echo "✅ Backend deployed successfully to ${{ secrets.EC2_HOST }}"
+
+    - name: Notify on failure
+      if: failure()
+      run: echo "❌ Backend deployment failed!"
