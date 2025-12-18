@@ -39,8 +39,9 @@
     "extra": {
       "API_URL": "http://3.109.121.160:5000/api",
       "eas": {
-        "projectId": "payment-collection-mobile"
+        "projectId": "50e39f77-c734-4889-aad5-b352bae4b6b7"
       }
-    }
+    },
+    "owner": "ourutk"
   }
 }
