@@ -69,6 +69,20 @@ app.use((req, res, next) => {
  *                   type: string
  *                   format: date-time
  */
+// API Welcome Endpoint
+app.get('/api', (req, res) => {
+  res.status(200).json({ 
+    success: true,
+    message: 'Payment Collection API v1.0',
+    endpoints: {
+      health: 'GET /api/health',
+      customers: 'GET /api/customers',
+      payments: 'GET /api/payments',
+      docs: 'GET /api-docs'
+    }
+  });
+});
+
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({ 
